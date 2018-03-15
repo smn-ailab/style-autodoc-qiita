@@ -1,0 +1,53 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: python:3
+
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "57:f1:**:**:**:**:**:**:**:**:**:**:**:**:**:**"
+            - "00:5e:**:**:**:**:**:**:**:**:**:**:**:**:**:**"
+      - run:
+          name: Install dependencies
+          command: pip install -r requirements.txt
+      - run:
+          name: Run tests
+          command: python setup.py nosetests --attr='!local'
+      - run:
+          name: Build documents
+          command: |
+            sphinx-build -a ./docs/ ./docs/html/;
+
+      - persist_to_workspace:
+          root: .
+          paths:
+            - docs/html/*
+
+  deploy_doc:
+    machine:
+      enabled: true
+
+    steps:
+      - attach_workspace:
+          at: html
+      - run:
+          name: Upload documents
+          command: |
+            pip install -U awscli;
+            # aws s3 sync ./html/* s3://<your bucket>/<your key>/
+
+workflows:
+  version: 2
+
+  build_deploy:
+    jobs:
+      - build
+      - deploy_doc:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
