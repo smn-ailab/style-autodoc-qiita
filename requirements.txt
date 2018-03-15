@@ -1,0 +1,4 @@
+nose
+pylint
+sphinx
+sphinx_autodoc_typehints
